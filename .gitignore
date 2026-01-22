@@ -13,9 +13,9 @@ __pycache__/
 # ===============================
 # ML Models (DO NOT UPLOAD)
 # ===============================
-backend/model/
-*.pkl
-*.joblib
+
+backend/model/**/*.pkl
+backend/model/**/*.joblib
 
 # ===============================
 # React / Node
