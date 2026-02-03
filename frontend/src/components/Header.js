@@ -173,17 +173,20 @@ const Header = () => {
           <div className="header-menu">
             <ul className="nav-list">
               <li>
-                <a href="/about" className="nav-link">About</a>
+                <a href="/home" className="nav-link">Home</a>
               </li>
               <li>
-                <a href="/simulation" className="nav-link">Simulation</a>
+                <a href="/about" className="nav-link">About</a>
               </li>
+              {/* <li>
+                <a href="/simulation" className="nav-link">Simulation</a>
+              </li> */}
               <li>
                 <a href="/contact" className="nav-link">Contact Us</a>
               </li>
-              <li>
+              {/* <li>
                 <a href="/login" className="nav-link">Log in</a>
-              </li>
+              </li> */}
             </ul>
           </div>
         </div>

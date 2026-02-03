@@ -4,6 +4,7 @@ import InputForm from "./components/InputForm";
 import PredictionDisplay from "./components/PredictionDisplay";
 import Info from "./components/Info";
 import HRDiagram from "./components/HRDiagram";
+import Footer from "./components/Footer";
 
 function App() {
   const [prediction, setPrediction] = useState(null);
@@ -64,7 +65,7 @@ function App() {
     <div style={{ fontFamily: "Arial", color: "white", background: "#000", minHeight: "100vh" }}>
       <Header />
       <div style={{ display: "flex", justifyContent: "space-around", padding: "20px" }}>
-        <div style={{ width: "45%" }}>
+        <div style={{ width: "45%", marginTop: "80px" }}>
           <img
             src="/spectral_types/mainpic.png"
             alt="space"
@@ -156,6 +157,7 @@ function App() {
           <HRDiagram star={prediction} useAbsolute={useAbsolute} />
         </div>
       )}
+      <Footer />
     </div>
   );
 }

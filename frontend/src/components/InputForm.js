@@ -71,35 +71,61 @@ export default function InputForm({ setPrediction }) {
   return (
     <div
       style={{
-        background: "#111",
-        padding: "30px",
-        borderRadius: "12px",
-        boxShadow: "0 0 20px rgba(0,0,0,0.5)",
-        color: "#fff",
+        background: "#1C1C1C",
+        padding: "40px",
+        borderRadius: "16px",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05)",
+        color: "#e0e6ed",
+        marginTop: "80px",
+        border: "1px solid rgba(100, 150, 200, 0.2)",
       }}
     >
-      <h2 style={{ marginBottom: "20px", color: "#00d1ff" }}>
+      <h2 style={{ 
+        marginBottom: "28px", 
+        color: "#a8c5dd",
+        fontSize: "26px",
+        fontWeight: "600",
+        letterSpacing: "0.3px",
+      }}>
         Enter UGRIZ Values
       </h2>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {["U", "G", "R", "I", "Z"].map((v) => (
-          <div key={v} style={{ display: "flex", gap: "10px" }}>
-            <label style={{ width: "30px", fontWeight: "bold" }}>{v}:</label>
+          <div key={v} style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <label style={{ 
+              width: "35px", 
+              fontWeight: "600",
+              fontSize: "15px",
+              color: "#8fa3c0",
+            }}>{v}:</label>
             <input
               type="number"
               step="any"
               name={v}
               value={inputs[v]}
               onChange={handleChange}
-              placeholder={`Enter ${v} (${MIN_MAG}-${MAX_MAG})`}
+              placeholder={`${v} (${MIN_MAG}-${MAX_MAG})`}
               style={{
                 flex: 1,
-                padding: "8px 12px",
-                borderRadius: "6px",
-                border: "1px solid #444",
-                background: "#222",
-                color: "#fff",
+                padding: "11px 14px",
+                borderRadius: "8px",
+                border: "1px solid rgba(100, 150, 200, 0.25)",
+                background: "rgba(15, 31, 53, 0.7)",
+                color: "#c5d3e0",
+                fontSize: "15px",
+                transition: "all 0.25s ease",
+                outline: "none",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "rgba(120, 170, 220, 0.5)";
+                e.target.style.background = "rgba(15, 31, 53, 0.9)";
+                e.target.style.boxShadow = "0 0 12px rgba(120, 170, 220, 0.15)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "rgba(100, 150, 200, 0.25)";
+                e.target.style.background = "rgba(15, 31, 53, 0.7)";
+                e.target.style.boxShadow = "none";
               }}
             />
           </div>
@@ -109,18 +135,27 @@ export default function InputForm({ setPrediction }) {
       {colors && (
         <div
           style={{
-            marginTop: "20px",
-            background: "#000",
-            padding: "12px",
-            borderRadius: "8px",
-            border: "1px solid #333",
+            marginTop: "28px",
+            background: "rgba(20, 35, 60, 0.6)",
+            padding: "16px 18px",
+            borderRadius: "10px",
+            border: "1px solid rgba(100, 150, 200, 0.2)",
           }}
         >
-          <h4 style={{ color: "#00d1ff" }}>Computed Color Indices</h4>
-          <p>u − g: {colors.u_g}</p>
-          <p>g − r: {colors.g_r}</p>
-          <p>r − i: {colors.r_i}</p>
-          <p>i − z: {colors.i_z}</p>
+          <h4 style={{ 
+            color: "#a8c5dd",
+            marginBottom: "12px",
+            fontSize: "14px",
+            fontWeight: "600",
+            letterSpacing: "0.2px",
+            textTransform: "uppercase",
+          }}>Computed Color Indices</h4>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+            <p style={{ margin: "0", fontSize: "13px", color: "#9ab3cc" }}>u − g: <span style={{ color: "#b8d1e8", fontWeight: "600" }}>{colors.u_g}</span></p>
+            <p style={{ margin: "0", fontSize: "13px", color: "#9ab3cc" }}>g − r: <span style={{ color: "#b8d1e8", fontWeight: "600" }}>{colors.g_r}</span></p>
+            <p style={{ margin: "0", fontSize: "13px", color: "#9ab3cc" }}>r − i: <span style={{ color: "#b8d1e8", fontWeight: "600" }}>{colors.r_i}</span></p>
+            <p style={{ margin: "0", fontSize: "13px", color: "#9ab3cc" }}>i − z: <span style={{ color: "#b8d1e8", fontWeight: "600" }}>{colors.i_z}</span></p>
+          </div>
         </div>
       )}
 
@@ -128,20 +163,49 @@ export default function InputForm({ setPrediction }) {
         onClick={handlePredict}
         disabled={loading}
         style={{
-          marginTop: "20px",
-          padding: "10px 20px",
-          background: loading ? "#555" : "#00d1ff",
-          color: "#000",
-          fontWeight: "bold",
-          border: "none",
-          borderRadius: "6px",
+          marginTop: "28px",
+          padding: "12px 28px",
+          background: loading 
+            ? "linear-gradient(135deg, #1a2a45 0%, #152040 100%)" 
+            : "linear-gradient(135deg, #4a7ba7 0%, #357a9f 100%)",
+          color: loading ? "#6a8aaa" : "#ffffff",
+          fontWeight: "600",
+          fontSize: "15px",
+          border: "1px solid " + (loading ? "rgba(100, 150, 200, 0.15)" : "rgba(120, 170, 220, 0.3)"),
+          borderRadius: "8px",
           cursor: loading ? "not-allowed" : "pointer",
+          transition: "all 0.25s ease",
+          width: "100%",
+          letterSpacing: "0.3px",
+        }}
+        onMouseEnter={(e) => {
+          if (!loading) {
+            e.target.style.transform = "translateY(-1px)";
+            e.target.style.boxShadow = "0 6px 20px rgba(74, 123, 167, 0.25)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!loading) {
+            e.target.style.transform = "translateY(0)";
+            e.target.style.boxShadow = "none";
+          }
         }}
       >
         {loading ? "Predicting..." : "Predict"}
       </button>
 
-      {error && <p style={{ color: "red", marginTop: "15px" }}>{error}</p>}
+      {error && (
+        <p style={{ 
+          color: "#d4a5a0", 
+          marginTop: "20px",
+          padding: "12px 14px",
+          background: "rgba(150, 100, 95, 0.12)",
+          borderRadius: "8px",
+          border: "1px solid rgba(150, 100, 95, 0.25)",
+          fontSize: "13px",
+          margin: "20px 0 0 0",
+        }}>{error}</p>
+      )}
     </div>
   );
 }
