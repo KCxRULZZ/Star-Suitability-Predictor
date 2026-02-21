@@ -1,7 +1,146 @@
 import React from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function PredictionDisplay({ prediction }) {
   if (!prediction) return null;
+
+  const formatNumber = (value, digits = 3) => {
+    if (value === null || value === undefined || value === "") return "N/A";
+    const num = Number(value);
+    if (Number.isNaN(num)) return String(value);
+    return num.toFixed(digits);
+  };
+
+  const formatDateForFile = (date) => {
+    const pad = (val) => String(val).padStart(2, "0");
+    const yyyy = date.getFullYear();
+    const mm = pad(date.getMonth() + 1);
+    const dd = pad(date.getDate());
+    const hh = pad(date.getHours());
+    const min = pad(date.getMinutes());
+    return `${yyyy}-${mm}-${dd}_${hh}-${min}`;
+  };
+
+  const loadLogoDataUrl = async () => {
+    try {
+      const response = await fetch("/logo.png");
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      return await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    const doc = new jsPDF();
+    const now = new Date();
+    const localDateTime = now.toLocaleString();
+
+    const spectralTypeRaw = prediction.Spectral_Type || "Unknown";
+    const safeSpectralType = String(spectralTypeRaw)
+      .trim()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9_\-]/g, "-");
+
+    const inputU = prediction.input_U ?? prediction.U;
+    const inputG = prediction.input_G ?? prediction.G;
+    const inputR = prediction.input_R ?? prediction.R;
+    const inputI = prediction.input_I ?? prediction.I;
+    const inputZ = prediction.input_Z ?? prediction.Z;
+
+    const extinctionApplied =
+      prediction.extinction_applied === true ||
+      prediction.extinction_applied === "true";
+    const ebvUsed = prediction.ebv_used ?? prediction.ebv;
+
+    const suitabilityAgreement =
+      prediction.Life_Supporting_agreement ??
+      prediction.Life_Supporting_confidence;
+
+    const logoDataUrl = await loadLogoDataUrl();
+    let cursorY = 18;
+    if (logoDataUrl) {
+      doc.addImage(logoDataUrl, "PNG", 14, 10, 20, 20);
+      doc.setFontSize(16);
+      doc.text("Star Suitability Prediction Report", 38, 22);
+      cursorY = 34;
+    } else {
+      doc.setFontSize(16);
+      doc.text("Star Suitability Prediction Report", 14, cursorY);
+      cursorY += 7;
+    }
+
+    doc.setFontSize(10);
+    doc.text(`Generated: ${localDateTime}`, 14, cursorY);
+    cursorY += 6;
+
+    const addTable = (title, body) => {
+      cursorY += 6;
+      doc.setFontSize(12);
+      doc.text(title, 14, cursorY);
+      cursorY += 4;
+
+      autoTable(doc, {
+        startY: cursorY,
+        head: [["Field", "Value"]],
+        body,
+        theme: "grid",
+        styles: { fontSize: 10, cellPadding: 2 },
+        headStyles: { fillColor: [0, 209, 255], textColor: [0, 0, 0] },
+        columnStyles: { 0: { cellWidth: 70 }, 1: { cellWidth: 110 } },
+        margin: { left: 14, right: 14 },
+      });
+
+      cursorY = doc.lastAutoTable.finalY + 2;
+    };
+
+    addTable("User Inputs (UGRIZ)", [
+      ["U", formatNumber(inputU, 3)],
+      ["G", formatNumber(inputG, 3)],
+      ["R", formatNumber(inputR, 3)],
+      ["I", formatNumber(inputI, 3)],
+      ["Z", formatNumber(inputZ, 3)],
+    ]);
+
+    addTable("Extinction / Reddening", [
+      ["extinction_applied", extinctionApplied ? "Yes" : "No"],
+      ["ebv_used", formatNumber(ebvUsed, 3)],
+    ]);
+
+    addTable("Computed Color Indices", [
+      ["u-g", formatNumber(prediction.u_g, 3)],
+      ["g-r", formatNumber(prediction.g_r, 3)],
+      ["r-i", formatNumber(prediction.r_i, 3)],
+      ["i-z", formatNumber(prediction.i_z, 3)],
+    ]);
+
+    addTable("Predictions", [
+      ["Spectral Type", String(spectralTypeRaw)],
+      ["Effective Temperature (Teff)", `${formatNumber(prediction.Teff, 0)} K`],
+      ["Metallicity Class", String(prediction.Metallicity_Class ?? "N/A")],
+      [
+        "Suitability For Hosting Habitable Exoplanets",
+        String(prediction.Life_Supporting_Star ?? "N/A"),
+      ],
+    ]);
+
+    addTable("Uncertainty & Agreement", [
+      ["Teff_uncertainty", formatNumber(prediction.Teff_uncertainty, 0)],
+      ["Spectral_confidence", formatNumber(prediction.Spectral_confidence, 3)],
+      ["Metallicity_confidence", formatNumber(prediction.Metallicity_confidence, 3)],
+      ["Suitability agreement", formatNumber(suitabilityAgreement, 3)],
+    ]);
+
+    const filename = `Star_Report_${safeSpectralType}_${formatDateForFile(now)}.pdf`;
+    doc.save(filename);
+  };
 
   // ===============================
   // RELIABILITY COLOR
@@ -25,9 +164,47 @@ export default function PredictionDisplay({ prediction }) {
         color: "#ffffff",
       }}
     >
-      <h2 style={{ color: "#00d1ff", marginBottom: "20px" }}>
-        Prediction Results
-      </h2>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "16px",
+          flexWrap: "wrap",
+          marginBottom: "20px",
+        }}
+      >
+        <h2 style={{ color: "#00d1ff", margin: 0 }}>
+          Prediction Results
+        </h2>
+
+        <button
+          onClick={handleDownloadReport}
+          style={{
+            padding: "10px 22px",
+            background: "linear-gradient(135deg, #4a7ba7 0%, #357a9f 100%)",
+            color: "#ffffff",
+            fontWeight: "600",
+            fontSize: "14px",
+            border: "1px solid rgba(120, 170, 220, 0.3)",
+            borderRadius: "8px",
+            cursor: "pointer",
+            transition: "all 0.25s ease",
+            letterSpacing: "0.3px",
+            whiteSpace: "nowrap",
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.transform = "translateY(-1px)";
+            e.target.style.boxShadow = "0 6px 20px rgba(74, 123, 167, 0.25)";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = "translateY(0)";
+            e.target.style.boxShadow = "none";
+          }}
+        >
+          Download Report (PDF)
+        </button>
+      </div>
 
       {/* ===============================
           VALIDITY WARNING

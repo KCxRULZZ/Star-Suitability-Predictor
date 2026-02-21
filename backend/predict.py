@@ -44,6 +44,8 @@ class UGRIZInput(BaseModel):
     R: float
     I: float
     Z: float
+    apply_extinction: bool = False
+    ebv: float = 0.0
 
 # ======================================================
 # SDSS COLOR RANGES
@@ -53,6 +55,17 @@ COLOR_RANGES = {
     "g_r": (-0.4, 1.6),
     "r_i": (-0.4, 1.3),
     "i_z": (-0.4, 1.1),
+}
+
+# ======================================================
+# SDSS EXTINCTION COEFFICIENTS (Rv=3.1)
+# ======================================================
+EXTINCTION_COEFFICIENTS = {
+    "U": 4.700,
+    "G": 3.630,
+    "R": 2.650,
+    "I": 2.010,
+    "Z": 1.540,
 }
 
 # ======================================================
@@ -88,10 +101,39 @@ def feature_influence(X, model, scaler, noise=0.02):
 @router.post("/")
 def predict(input: UGRIZInput):
     try:
-        u_g = input.U - input.G
-        g_r = input.G - input.R
-        r_i = input.R - input.I
-        i_z = input.I - input.Z
+        # Apply extinction correction if requested
+        extinction_applied = False
+        ebv_used = 0.0
+        
+        U_mag = input.U
+        G_mag = input.G
+        R_mag = input.R
+        I_mag = input.I
+        Z_mag = input.Z
+        
+        if input.apply_extinction and input.ebv > 0:
+            extinction_applied = True
+            ebv_used = input.ebv
+            
+            # Calculate extinction in each band: A_lambda = R_lambda * E(B-V)
+            A_U = EXTINCTION_COEFFICIENTS["U"] * input.ebv
+            A_G = EXTINCTION_COEFFICIENTS["G"] * input.ebv
+            A_R = EXTINCTION_COEFFICIENTS["R"] * input.ebv
+            A_I = EXTINCTION_COEFFICIENTS["I"] * input.ebv
+            A_Z = EXTINCTION_COEFFICIENTS["Z"] * input.ebv
+            
+            # Correct magnitudes: mag_corrected = mag_observed - A_lambda
+            U_mag = input.U - A_U
+            G_mag = input.G - A_G
+            R_mag = input.R - A_R
+            I_mag = input.I - A_I
+            Z_mag = input.Z - A_Z
+        
+        # Compute color indices using corrected magnitudes
+        u_g = U_mag - G_mag
+        g_r = G_mag - R_mag
+        r_i = R_mag - I_mag
+        i_z = I_mag - Z_mag
 
         X = np.array([[u_g, g_r, r_i, i_z]])
 
@@ -169,6 +211,8 @@ def predict(input: UGRIZInput):
                 "r-i": color_influence[2],
                 "i-z": color_influence[3],
             },
+            "extinction_applied": extinction_applied,
+            "ebv_used": ebv_used,
         }
 
     except Exception as e:

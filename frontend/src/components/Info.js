@@ -4,7 +4,7 @@ const infoData = {
   O: {
     text: "O-type stars are extremely hot, blue, and massive. They are rare but dominate the light of young stellar populations.",
     exoplanetSuitability: [
-      "❌ Exoplanet hosting: Extremely unlikely",
+      "Exoplanet hosting: Extremely unlikely",
       "Very short stellar lifetime (a few million years), insufficient for planet formation and evolution",
       "Intense ultraviolet and X-ray radiation strips planetary atmospheres",
       "Strong stellar winds destabilize protoplanetary disks",
@@ -17,7 +17,7 @@ const infoData = {
   B: {
     text: "B-type stars are very luminous and blue-white in color. Often found in young stellar clusters.",
     exoplanetSuitability: [
-      "❌ Exoplanet hosting: Very unlikely",
+      "Exoplanet hosting: Very unlikely",
       "High UV radiation damages planetary atmospheres",
       "Short-to-moderate stellar lifespan limits biological evolution",
       "Strong radiation pressure disrupts disk stability",
@@ -30,7 +30,7 @@ const infoData = {
   A: {
     text: "A-type stars are white and often used as photometric calibrators due to their smooth spectra.",
     exoplanetSuitability: [
-      "⚠️ Exoplanet hosting: Possible but uncommon",
+      "Exoplanet hosting: Possible but uncommon",
       "Moderate stellar lifetime allows gas giant formation",
       "High luminosity pushes habitable zone farther out",
       "Weaker magnetic activity than cooler stars",
@@ -43,7 +43,7 @@ const infoData = {
   F: {
     text: "F-type stars are slightly hotter and more massive than the Sun, with white-yellow color.",
     exoplanetSuitability: [
-      "✅ Exoplanet hosting: Moderately suitable",
+      "Exoplanet hosting: Moderately suitable",
       "Stable main-sequence lifetime supports planet formation",
       "Habitable zones exist but receive higher UV radiation",
       "Good balance between luminosity and lifespan",
@@ -56,7 +56,7 @@ const infoData = {
   G: {
     text: "G-type stars like our Sun are stable and yellow. They support complex planetary systems.",
     exoplanetSuitability: [
-      "✅ Exoplanet hosting: Highly suitable",
+      "Exoplanet hosting: Highly suitable",
       "Long-lived and stable main-sequence phase",
       "Well-defined and stable habitable zone",
       "Moderate radiation environment",
@@ -69,7 +69,7 @@ const infoData = {
   K: {
     text: "K-type stars are cooler and orange. They are stable and long-lived — excellent for planetary systems.",
     exoplanetSuitability: [
-      "✅ Exoplanet hosting: Very high suitability",
+      "Exoplanet hosting: Very high suitability",
       "Extremely long stellar lifetimes (tens of billions of years)",
       "Stable habitable zones close to the star",
       "Lower radiation than G-type stars",
@@ -82,7 +82,7 @@ const infoData = {
   M: {
     text: "M-type stars (red dwarfs) are the most common stars in the universe.",
     exoplanetSuitability: [
-      "✅ Exoplanet hosting: Very high (with caveats)",
+      "Exoplanet hosting: Very high (with caveats)",
       "Extremely long-lived stars (>100 billion years)",
       "Habitable zones are very close to the star",
       "Tidal locking likely for habitable-zone planets",

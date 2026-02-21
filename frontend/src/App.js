@@ -1,10 +1,12 @@
 import React, { useState, useRef } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import InputForm from "./components/InputForm";
 import PredictionDisplay from "./components/PredictionDisplay";
 import Info from "./components/Info";
 import HRDiagram from "./components/HRDiagram";
 import Footer from "./components/Footer";
+import AboutUs from "./components/AboutUs";
 
 function App() {
   const [prediction, setPrediction] = useState(null);
@@ -61,9 +63,8 @@ function App() {
     </div>
   );
 
-  return (
-    <div style={{ fontFamily: "Arial", color: "white", background: "#000", minHeight: "100vh" }}>
-      <Header />
+  const HomePage = () => (
+    <>
       <div style={{ display: "flex", justifyContent: "space-around", padding: "20px" }}>
         <div style={{ width: "45%", marginTop: "80px" }}>
           <img
@@ -157,8 +158,21 @@ function App() {
           <HRDiagram star={prediction} useAbsolute={useAbsolute} />
         </div>
       )}
-      <Footer />
-    </div>
+    </>
+  );
+
+  return (
+    <BrowserRouter>
+      <div style={{ fontFamily: "Arial", color: "white", background: "#000", minHeight: "100vh" }}>
+        <Header />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/about" element={<AboutUs />} />
+        </Routes>
+        <Footer />
+      </div>
+    </BrowserRouter>
   );
 }
 

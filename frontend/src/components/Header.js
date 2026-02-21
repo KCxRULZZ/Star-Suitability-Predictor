@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   return (
@@ -176,7 +177,7 @@ const Header = () => {
                 <a href="/home" className="nav-link">Home</a>
               </li>
               <li>
-                <a href="/about" className="nav-link">About</a>
+                <Link to="/about" className="nav-link">About Us</Link>
               </li>
               {/* <li>
                 <a href="/simulation" className="nav-link">Simulation</a>
