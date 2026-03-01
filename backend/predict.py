@@ -149,26 +149,19 @@ def predict(input: UGRIZInput):
         N = 30
         sigma = 0.02
 
-        teff_vals = []
-        metal_vals = []
-        spec_vals = []
-        exo_vals = []
+        noise = np.random.normal(0, sigma, size=(N, X.shape[1]))
+        Xn_batch = X + noise
 
-        for _ in range(N):
-            Xn = X + np.random.normal(0, sigma, X.shape)
+        teff_vals = teff_model.predict(teff_scaler.transform(Xn_batch))
 
-            teff_vals.append(
-                teff_model.predict(teff_scaler.transform(Xn))[0]
-            )
+        metal_encoded = metal_model.predict(metal_scaler.transform(Xn_batch))
+        metal_vals = metal_le.inverse_transform(metal_encoded)
 
-            metal_encoded = metal_model.predict(metal_scaler.transform(Xn))
-            metal_vals.append(metal_le.inverse_transform(metal_encoded)[0])
+        spec_encoded = spectral_model.predict(spectral_scaler.transform(Xn_batch))
+        spec_vals = spectral_le.inverse_transform(spec_encoded)
 
-            spec_encoded = spectral_model.predict(spectral_scaler.transform(Xn))
-            spec_vals.append(spectral_le.inverse_transform(spec_encoded)[0])
-
-            exo_encoded = exo_model.predict(exo_scaler.transform(Xn))
-            exo_vals.append(exo_le.inverse_transform(exo_encoded)[0])
+        exo_encoded = exo_model.predict(exo_scaler.transform(Xn_batch))
+        exo_vals = exo_le.inverse_transform(exo_encoded)
 
         Teff = float(np.mean(teff_vals))
         Teff_unc = float(np.std(teff_vals))

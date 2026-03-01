@@ -28,6 +28,28 @@
   color: #61dafb;
 }
 
+.typing-title {
+  margin: 0;
+  color: #e6edf7;
+  font-size: clamp(1.2rem, 2.2vw, 1.8rem);
+  font-weight: 700;
+  line-height: 1.2;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: calc(100vw - 40px);
+  animation: typing 3s steps(48, end) 1 forwards;
+}
+
+@keyframes typing {
+  from {
+    width: 0;
+  }
+  to {
+    width: 48ch;
+  }
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);

@@ -112,7 +112,7 @@ export default function InputForm({ setPrediction }) {
         borderRadius: "16px",
         boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05)",
         color: "#e0e6ed",
-        marginTop: "80px",
+        marginTop: "0px",
         border: "1px solid rgba(100, 150, 200, 0.2)",
       }}
     >
