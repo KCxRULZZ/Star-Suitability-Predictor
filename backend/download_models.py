@@ -7,14 +7,8 @@ BASE_DIR = Path(__file__).resolve().parent
 MODEL_DIR = BASE_DIR / "model"
 TMP_DIR = BASE_DIR / "tmp_download"
 
-# Replace this with your real Google Drive FILE ID
 FILE_ID = "1GKZLGsWUG0d-VtnMgYJY-XzbEX99RCX3"
-
 ZIP_PATH = TMP_DIR / "model.zip"
-
-
-def models_exist():
-    return False
 
 
 def clean_tmp():
@@ -23,35 +17,29 @@ def clean_tmp():
     TMP_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def extract_zip(zip_file, destination):
-    if destination.exists():
-        shutil.rmtree(destination)
-    destination.mkdir(parents=True, exist_ok=True)
-
-    with zipfile.ZipFile(zip_file, "r") as zf:
-        zf.extractall(destination)
-
-
 def main():
-    print("Checking if models already exist...")
-
-    if models_exist():
-        print("Models already exist. Skipping download.")
-        return
-
+    print("Preparing model download...")
     clean_tmp()
 
     url = f"https://drive.google.com/uc?id={FILE_ID}"
     print("Downloading model.zip from Google Drive...")
     gdown.download(url, str(ZIP_PATH), quiet=False, fuzzy=True)
 
-    if not ZIP_PATH.exists():
-        raise FileNotFoundError("model.zip was not downloaded.")
+    extract_dir = TMP_DIR / "extracted"
+    extract_dir.mkdir(parents=True, exist_ok=True)
 
     print("Extracting model.zip...")
-    extract_zip(ZIP_PATH, MODEL_DIR)
+    with zipfile.ZipFile(ZIP_PATH, "r") as zf:
+        zf.extractall(extract_dir)
 
-    print("Models downloaded and extracted successfully.")
+    inner_model = extract_dir / "model"
+
+    if MODEL_DIR.exists():
+        shutil.rmtree(MODEL_DIR)
+
+    shutil.move(inner_model, MODEL_DIR)
+
+    print("Models downloaded and placed correctly.")
 
 
 if __name__ == "__main__":
