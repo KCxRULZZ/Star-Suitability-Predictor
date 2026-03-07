@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import numpy as np
 import joblib
 from pathlib import Path
+from functools import lru_cache
 
 router = APIRouter(prefix="/predict")
 
@@ -14,27 +15,43 @@ MODEL_DIR = BASE_DIR / "model"
 
 
 # ======================================================
-# LOAD MODELS + SCALERS + LABEL ENCODERS
+# LAZY LOAD MODELS + SCALERS + LABEL ENCODERS
 # ======================================================
+@lru_cache(maxsize=1)
+def get_models():
+    # ---------- Teff (Regression) ----------
+    teff_scaler = joblib.load(MODEL_DIR / "teff" / "scaler.pkl")
+    teff_model = joblib.load(MODEL_DIR / "teff" / "Teff_model.pkl")
 
-# ---------- Teff (Regression) ----------
-teff_scaler = joblib.load(MODEL_DIR / "teff" / "scaler.pkl")
-teff_model = joblib.load(MODEL_DIR / "teff" / "Teff_model.pkl")
+    # ---------- Metallicity Class ----------
+    metal_scaler = joblib.load(MODEL_DIR / "metallicity" / "scaler.pkl")
+    metal_model = joblib.load(MODEL_DIR / "metallicity" / "Metallicity_model.pkl")
+    metal_le = joblib.load(MODEL_DIR / "metallicity" / "label_encoder.pkl")
 
-# ---------- Metallicity Class ----------
-metal_scaler = joblib.load(MODEL_DIR / "metallicity" / "scaler.pkl")
-metal_model = joblib.load(MODEL_DIR / "metallicity" / "Metallicity_model.pkl")
-metal_le = joblib.load(MODEL_DIR / "metallicity" / "label_encoder.pkl")
+    # ---------- Spectral Type ----------
+    spectral_scaler = joblib.load(MODEL_DIR / "spectral" / "spectral_scaler.pkl")
+    spectral_model = joblib.load(MODEL_DIR / "spectral" / "spectral_type_rf_model.pkl")
+    spectral_le = joblib.load(MODEL_DIR / "spectral" / "spectral_label_encoder.pkl")
 
-# ---------- Spectral Type ----------
-spectral_scaler = joblib.load(MODEL_DIR / "spectral" / "spectral_scaler.pkl")
-spectral_model = joblib.load(MODEL_DIR / "spectral" / "spectral_type_rf_model.pkl")
-spectral_le = joblib.load(MODEL_DIR / "spectral" / "spectral_label_encoder.pkl")
+    # ---------- Life Supporting Star ----------
+    exo_scaler = joblib.load(MODEL_DIR / "Exo" / "scaler.pkl")
+    exo_model = joblib.load(MODEL_DIR / "Exo" / "life_supporting_star_rf_model.pkl")
+    exo_le = joblib.load(MODEL_DIR / "Exo" / "label_encoder.pkl")
 
-# ---------- Life Supporting Star ----------
-exo_scaler = joblib.load(MODEL_DIR / "Exo" / "scaler.pkl")
-exo_model = joblib.load(MODEL_DIR / "Exo" / "life_supporting_star_rf_model.pkl")
-exo_le = joblib.load(MODEL_DIR / "Exo" / "label_encoder.pkl")
+    return {
+        "teff_scaler": teff_scaler,
+        "teff_model": teff_model,
+        "metal_scaler": metal_scaler,
+        "metal_model": metal_model,
+        "metal_le": metal_le,
+        "spectral_scaler": spectral_scaler,
+        "spectral_model": spectral_model,
+        "spectral_le": spectral_le,
+        "exo_scaler": exo_scaler,
+        "exo_model": exo_model,
+        "exo_le": exo_le,
+    }
+
 
 # ======================================================
 # INPUT SCHEMA
@@ -48,6 +65,7 @@ class UGRIZInput(BaseModel):
     apply_extinction: bool = False
     ebv: float = 0.0
 
+
 # ======================================================
 # SDSS COLOR RANGES
 # ======================================================
@@ -57,6 +75,7 @@ COLOR_RANGES = {
     "r_i": (-0.4, 1.3),
     "i_z": (-0.4, 1.1),
 }
+
 
 # ======================================================
 # SDSS EXTINCTION COEFFICIENTS (Rv=3.1)
@@ -68,6 +87,7 @@ EXTINCTION_COEFFICIENTS = {
     "I": 2.010,
     "Z": 1.540,
 }
+
 
 # ======================================================
 # HELPERS
@@ -96,40 +116,58 @@ def feature_influence(X, model, scaler, noise=0.02):
 
     return (impacts / impacts.sum() * 100).round(1).tolist()
 
+
 # ======================================================
 # ENDPOINT
 # ======================================================
 @router.post("/")
 def predict(input: UGRIZInput):
     try:
+        models = get_models()
+
+        teff_scaler = models["teff_scaler"]
+        teff_model = models["teff_model"]
+
+        metal_scaler = models["metal_scaler"]
+        metal_model = models["metal_model"]
+        metal_le = models["metal_le"]
+
+        spectral_scaler = models["spectral_scaler"]
+        spectral_model = models["spectral_model"]
+        spectral_le = models["spectral_le"]
+
+        exo_scaler = models["exo_scaler"]
+        exo_model = models["exo_model"]
+        exo_le = models["exo_le"]
+
         # Apply extinction correction if requested
         extinction_applied = False
         ebv_used = 0.0
-        
+
         U_mag = input.U
         G_mag = input.G
         R_mag = input.R
         I_mag = input.I
         Z_mag = input.Z
-        
+
         if input.apply_extinction and input.ebv > 0:
             extinction_applied = True
             ebv_used = input.ebv
-            
+
             # Calculate extinction in each band: A_lambda = R_lambda * E(B-V)
             A_U = EXTINCTION_COEFFICIENTS["U"] * input.ebv
             A_G = EXTINCTION_COEFFICIENTS["G"] * input.ebv
             A_R = EXTINCTION_COEFFICIENTS["R"] * input.ebv
             A_I = EXTINCTION_COEFFICIENTS["I"] * input.ebv
             A_Z = EXTINCTION_COEFFICIENTS["Z"] * input.ebv
-            
+
             # Correct magnitudes: mag_corrected = mag_observed - A_lambda
             U_mag = input.U - A_U
             G_mag = input.G - A_G
             R_mag = input.R - A_R
             I_mag = input.I - A_I
             Z_mag = input.Z - A_Z
-        
+
         # Compute color indices using corrected magnitudes
         u_g = U_mag - G_mag
         g_r = G_mag - R_mag
