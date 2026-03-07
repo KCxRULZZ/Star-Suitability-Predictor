@@ -14,8 +14,7 @@ ZIP_PATH = TMP_DIR / "model.zip"
 
 
 def models_exist():
-    needed = ["Exo", "metallicity", "spectral", "teff"]
-    return all((MODEL_DIR / folder).exists() for folder in needed)
+    return False
 
 
 def clean_tmp():
