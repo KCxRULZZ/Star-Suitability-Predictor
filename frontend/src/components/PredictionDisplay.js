@@ -47,7 +47,7 @@ export default function PredictionDisplay({ prediction }) {
     const safeSpectralType = String(spectralTypeRaw)
       .trim()
       .replace(/\s+/g, "_")
-      .replace(/[^a-zA-Z0-9_\-]/g, "-");
+      .replace(/[^a-zA-Z0-9_-]/g, "-");
 
     const inputU = prediction.input_U ?? prediction.U;
     const inputG = prediction.input_G ?? prediction.G;
