@@ -6,7 +6,7 @@ from predict import router as predict_router
 app = FastAPI()
 
 origins = [
-    "https://star-suitability-predictor-1.onrender.com",
+    "https://frontend-production-449c.up.railway.app",
     "http://localhost:3000",
 ]
 
