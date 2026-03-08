@@ -149,7 +149,7 @@ const Header = () => {
       {/* Header JSX */}
       <nav className="header-nav">
         <div className="header-container">
-          <a href="/" className="header-logo">
+          <a href="https://exosynergy.onrender.com/" className="header-logo">
             <img src="/logo.png" className="logo-img" alt="ExoSynergy Logo" />
             <span className="logo-text">ExoSynergy</span>
           </a>
