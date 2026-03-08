@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import numpy as np
 import joblib
 from pathlib import Path
-from functools import lru_cache
+import gc
 
 router = APIRouter(prefix="/predict")
 
@@ -12,45 +12,6 @@ router = APIRouter(prefix="/predict")
 # ======================================================
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_DIR = BASE_DIR / "model"
-
-
-# ======================================================
-# LAZY LOAD MODELS + SCALERS + LABEL ENCODERS
-# ======================================================
-@lru_cache(maxsize=1)
-def get_models():
-    # ---------- Teff (Regression) ----------
-    teff_scaler = joblib.load(MODEL_DIR / "teff" / "scaler.pkl")
-    teff_model = joblib.load(MODEL_DIR / "teff" / "Teff_model.pkl")
-
-    # ---------- Metallicity Class ----------
-    metal_scaler = joblib.load(MODEL_DIR / "metallicity" / "scaler.pkl")
-    metal_model = joblib.load(MODEL_DIR / "metallicity" / "Metallicity_model.pkl")
-    metal_le = joblib.load(MODEL_DIR / "metallicity" / "label_encoder.pkl")
-
-    # ---------- Spectral Type ----------
-    spectral_scaler = joblib.load(MODEL_DIR / "spectral" / "spectral_scaler.pkl")
-    spectral_model = joblib.load(MODEL_DIR / "spectral" / "spectral_type_rf_model.pkl")
-    spectral_le = joblib.load(MODEL_DIR / "spectral" / "spectral_label_encoder.pkl")
-
-    # ---------- Life Supporting Star ----------
-    exo_scaler = joblib.load(MODEL_DIR / "Exo" / "scaler.pkl")
-    exo_model = joblib.load(MODEL_DIR / "Exo" / "life_supporting_star_rf_model.pkl")
-    exo_le = joblib.load(MODEL_DIR / "Exo" / "label_encoder.pkl")
-
-    return {
-        "teff_scaler": teff_scaler,
-        "teff_model": teff_model,
-        "metal_scaler": metal_scaler,
-        "metal_model": metal_model,
-        "metal_le": metal_le,
-        "spectral_scaler": spectral_scaler,
-        "spectral_model": spectral_model,
-        "spectral_le": spectral_le,
-        "exo_scaler": exo_scaler,
-        "exo_model": exo_model,
-        "exo_le": exo_le,
-    }
 
 
 # ======================================================
@@ -123,23 +84,6 @@ def feature_influence(X, model, scaler, noise=0.02):
 @router.post("/")
 def predict(input: UGRIZInput):
     try:
-        models = get_models()
-
-        teff_scaler = models["teff_scaler"]
-        teff_model = models["teff_model"]
-
-        metal_scaler = models["metal_scaler"]
-        metal_model = models["metal_model"]
-        metal_le = models["metal_le"]
-
-        spectral_scaler = models["spectral_scaler"]
-        spectral_model = models["spectral_model"]
-        spectral_le = models["spectral_le"]
-
-        exo_scaler = models["exo_scaler"]
-        exo_model = models["exo_model"]
-        exo_le = models["exo_le"]
-
         # Apply extinction correction if requested
         extinction_applied = False
         ebv_used = 0.0
@@ -154,21 +98,19 @@ def predict(input: UGRIZInput):
             extinction_applied = True
             ebv_used = input.ebv
 
-            # Calculate extinction in each band: A_lambda = R_lambda * E(B-V)
             A_U = EXTINCTION_COEFFICIENTS["U"] * input.ebv
             A_G = EXTINCTION_COEFFICIENTS["G"] * input.ebv
             A_R = EXTINCTION_COEFFICIENTS["R"] * input.ebv
             A_I = EXTINCTION_COEFFICIENTS["I"] * input.ebv
             A_Z = EXTINCTION_COEFFICIENTS["Z"] * input.ebv
 
-            # Correct magnitudes: mag_corrected = mag_observed - A_lambda
             U_mag = input.U - A_U
             G_mag = input.G - A_G
             R_mag = input.R - A_R
             I_mag = input.I - A_I
             Z_mag = input.Z - A_Z
 
-        # Compute color indices using corrected magnitudes
+        # Compute color indices
         u_g = U_mag - G_mag
         g_r = G_mag - R_mag
         r_i = R_mag - I_mag
@@ -187,39 +129,68 @@ def predict(input: UGRIZInput):
 
         N = 30
         sigma = 0.02
-
         noise = np.random.normal(0, sigma, size=(N, X.shape[1]))
         Xn_batch = X + noise
 
+        # ---------- Teff ----------
+        teff_scaler = joblib.load(MODEL_DIR / "teff" / "scaler.pkl")
+        teff_model = joblib.load(MODEL_DIR / "teff" / "Teff_model.pkl")
+
         teff_vals = teff_model.predict(teff_scaler.transform(Xn_batch))
-
-        metal_encoded = metal_model.predict(metal_scaler.transform(Xn_batch))
-        metal_vals = metal_le.inverse_transform(metal_encoded)
-
-        spec_encoded = spectral_model.predict(spectral_scaler.transform(Xn_batch))
-        spec_vals = spectral_le.inverse_transform(spec_encoded)
-
-        exo_encoded = exo_model.predict(exo_scaler.transform(Xn_batch))
-        exo_vals = exo_le.inverse_transform(exo_encoded)
-
         Teff = float(np.mean(teff_vals))
         Teff_unc = float(np.std(teff_vals))
 
-        Spectral_Type, Spectral_conf = np.unique(spec_vals, return_counts=True)
-        Spectral_Type = Spectral_Type[np.argmax(Spectral_conf)]
-        Spectral_conf = int(100 * np.max(Spectral_conf) / N)
+        color_influence = feature_influence(X, teff_model, teff_scaler)
+
+        del teff_scaler, teff_model, teff_vals
+        gc.collect()
+
+        # ---------- Metallicity ----------
+        metal_scaler = joblib.load(MODEL_DIR / "metallicity" / "scaler.pkl")
+        metal_model = joblib.load(MODEL_DIR / "metallicity" / "Metallicity_model.pkl")
+        metal_le = joblib.load(MODEL_DIR / "metallicity" / "label_encoder.pkl")
+
+        metal_encoded = metal_model.predict(metal_scaler.transform(Xn_batch))
+        metal_vals = metal_le.inverse_transform(metal_encoded)
 
         Metallicity_Class, Metallicity_conf = np.unique(metal_vals, return_counts=True)
         Metallicity_Class = Metallicity_Class[np.argmax(Metallicity_conf)]
         Metallicity_conf = int(100 * np.max(Metallicity_conf) / N)
 
+        del metal_scaler, metal_model, metal_le, metal_encoded, metal_vals
+        gc.collect()
+
+        # ---------- Spectral ----------
+        spectral_scaler = joblib.load(MODEL_DIR / "spectral" / "spectral_scaler.pkl")
+        spectral_model = joblib.load(MODEL_DIR / "spectral" / "spectral_type_rf_model.pkl")
+        spectral_le = joblib.load(MODEL_DIR / "spectral" / "spectral_label_encoder.pkl")
+
+        spec_encoded = spectral_model.predict(spectral_scaler.transform(Xn_batch))
+        spec_vals = spectral_le.inverse_transform(spec_encoded)
+
+        Spectral_Type, Spectral_conf = np.unique(spec_vals, return_counts=True)
+        Spectral_Type = Spectral_Type[np.argmax(Spectral_conf)]
+        Spectral_conf = int(100 * np.max(Spectral_conf) / N)
+
+        del spectral_scaler, spectral_model, spectral_le, spec_encoded, spec_vals
+        gc.collect()
+
+        # ---------- Exo ----------
+        exo_scaler = joblib.load(MODEL_DIR / "Exo" / "scaler.pkl")
+        exo_model = joblib.load(MODEL_DIR / "Exo" / "life_supporting_star_rf_model.pkl")
+        exo_le = joblib.load(MODEL_DIR / "Exo" / "label_encoder.pkl")
+
+        exo_encoded = exo_model.predict(exo_scaler.transform(Xn_batch))
+        exo_vals = exo_le.inverse_transform(exo_encoded)
+
         Life_Supporting, Exo_conf = np.unique(exo_vals, return_counts=True)
         Life_Supporting = Life_Supporting[np.argmax(Exo_conf)]
         Exo_conf = int(100 * np.max(Exo_conf) / N)
 
-        overall_conf = int((Spectral_conf + Metallicity_conf + Exo_conf) / 3)
+        del exo_scaler, exo_model, exo_le, exo_encoded, exo_vals
+        gc.collect()
 
-        color_influence = feature_influence(X, teff_model, teff_scaler)
+        overall_conf = int((Spectral_conf + Metallicity_conf + Exo_conf) / 3)
 
         return {
             "u_g": u_g,
